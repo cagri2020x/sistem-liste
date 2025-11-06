@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sonuçlar Listesi</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f0f0f0;
+        }
+        @media (prefers-color-scheme: dark) {
+            body { background-color: #222; color: #fff; }
+            .info-box { background-color: #333; border-color: #555; }
+        }
+        ul { list-style-type: none; padding: 0; }
+        li {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            border-bottom: 1px solid #ccc;
+        }
+        .folder-name {
+            flex-grow: 1;
+            cursor: pointer;
+            text-decoration: underline;
+        }
+        .txt-content { display: none; padding: 10px; background-color: #fff; margin-top: 10px; border: 1px solid #ccc; }
+        @media (prefers-color-scheme: dark) { .txt-content { background-color: #333; } }
+        .search-bar {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+        .info-box {
+            padding: 10px;
+            border: 1px solid #ccc;
+            background-color: #fff;
+            margin-bottom: 10px;
+            font-size: 14px;
+            position: relative;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 10px;
+        }
+        th, td {
+            border: 1px solid #ccc;
+            padding: 8px;
+            text-align: left;
+        }
+        @media (max-width: 600px) {
+            th, td { font-size: 12px; padding: 5px; }
+            li { flex-direction: column; align-items: flex-start; }
+            .folder-name { margin-bottom: 5px; }
+        }
+        .delete-btn {
+            background-color: #ff4444;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            cursor: pointer;
+            margin-left: 10px;
+        }
+        @media (prefers-color-scheme: dark) {
+            .info-box { background-color: #333; border-color: #555; }
+        }
+    </style>
+</head>
+<body>
+    <h1>Sonuçlar Listesi</h1>
+    <input type="text" id="search" class="search-bar" placeholder="Klasör adına göre ara...">
+    <div class="info-box" id="stats-info"></div>
+    <ul id="folder-list"></ul>
+
+    <script>
+        const folders = [
+
+];
+
+        let checkedState = JSON.parse(localStorage.getItem('checkedState')) || {};
+        let hiddenFolders = JSON.parse(localStorage.getItem('hiddenFolders')) || [];
+
+        function renderList(searchTerm = '') {
+            const ul = document.getElementById('folder-list');
+            ul.innerHTML = '';
+            let totalVisible = 0;
+            let checkedCount = 0;
+
+            folders
+                .filter(f => !hiddenFolders.includes(f.name) && f.name.toLowerCase().includes(searchTerm.toLowerCase()))
+                .forEach(folder => {
+                    totalVisible++;
+                    const li = document.createElement('li');
+                    const isChecked = checkedState[folder.name];
+                    if (isChecked) checkedCount++;
+
+                    li.innerHTML = `
+                        <input type="checkbox" id="check-${folder.name}" ${isChecked ? 'checked' : ''}>
+                        <span class="folder-name" onclick="showTxt('${folder.name}')">${folder.name}</span>
+                        <button class="delete-btn" onclick="hideFolder('${folder.name}')">Sil</button>
+                        <div id="content-${folder.name}" class="txt-content">${folder.content}</div>
+                    `;
+                    ul.appendChild(li);
+                });
+
+            const remaining = totalVisible - checkedCount;
+
+            document.getElementById('stats-info').innerHTML = `
+                Toplam liste sayısı: ${totalVisible}<br>
+                Tikli liste sayısı: ${checkedCount}<br>
+                Kalan liste: ${remaining}
+            `;
+        }
+
+        function showTxt(name) {
+            document.querySelectorAll('.txt-content').forEach(content => content.style.display = 'none');
+            const contentDiv = document.getElementById(`content-${name}`);
+            if (contentDiv) contentDiv.style.display = 'block';
+        }
+
+        function hideFolder(name) {
+            hiddenFolders.push(name);
+            localStorage.setItem('hiddenFolders', JSON.stringify(hiddenFolders));
+            renderList(document.getElementById('search').value);
+        }
+
+        document.getElementById('search').addEventListener('input', e => renderList(e.target.value));
+
+        document.getElementById('folder-list').addEventListener('change', e => {
+            if (e.target.type === 'checkbox') {
+                const name = e.target.id.replace('check-', '');
+                checkedState[name] = e.target.checked;
+                localStorage.setItem('checkedState', JSON.stringify(checkedState));
+                renderList(document.getElementById('search').value); // Yeniden hesapla
+            }
+        });
+
+        renderList();
+    </script>
+</body>
+</html>
